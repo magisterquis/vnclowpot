@@ -3,7 +3,7 @@ vnclowpot
 Low-interaction VNC honeypot.  Listens on a port and logs responses to a static
 VNC Auth challenge.
 
-It was inspired by (VNC-Pot)[https://github.com/SepehrHml/VNC-Pot], but does
+It was inspired by [VNC-Pot](https://github.com/SepehrHml/VNC-Pot), but does
 not have any dependencies outside the go standard library.
 
 Setup and Install

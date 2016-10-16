@@ -23,7 +23,8 @@ import (
 const VERSION = "RFB 003.008\n"
 
 // CHALLENGE is the VNC Auth challenge to send
-const CHALLENGE = "AAAAAAAAAAAAAAAA"
+const CHALLENGE = "\x00\x00\x00\x00\x00\x00\x00\x00" +
+	"\x00\x00\x00\x00\x00\x00\x00\x00"
 
 func main() {
 	var (

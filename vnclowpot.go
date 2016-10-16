@@ -213,7 +213,7 @@ func handle(c net.Conn) {
 
 /* slogger is a logger for successful authentication attempts.  It logs to
 stdout. */
-var slogger = log.New(os.Stdout, "", 0)
+var slogger = log.New(os.Stdout, "", log.LstdFlags)
 
 /* logSuc logs successful authentications */
 func logSuc(f string, a ...interface{}) {

@@ -138,15 +138,13 @@ func handle(c net.Conn) {
 	case "RFB 003.003\n": /* Protocol version 3.3, which is ancient */
 		cver = "RFB 3.3"
 		/* Tell the client to use VNC auth */
-		if n, err := c.Write([]byte{0, 0, 0, 2}); nil != err {
+		if _, err := c.Write([]byte{0, 0, 0, 2}); nil != err {
 			log.Printf(
 				"%v Unable to specify VNC auth (%v): %v",
 				c.RemoteAddr(),
 				cver,
 				err,
 			)
-		} else {
-			log.Printf("Wrote %v bytes", n) /* DEBUG */
 		}
 	default:
 		log.Printf("%v Received bad version %q", c.RemoteAddr(), ver)

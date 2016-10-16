@@ -201,7 +201,7 @@ func handle(c net.Conn) {
 		}
 		return
 	}
-	logSuc("%v Auth response: %q", c.RemoteAddr(), buf)
+	logSuc("%v Auth response: %02X", c.RemoteAddr(), buf)
 	/* Tell client auth failed */
 	c.Write(append(
 		[]byte{

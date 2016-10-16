@@ -91,8 +91,63 @@ func handle(c net.Conn) {
 		)
 		return
 	}
-	/* Versions have to match */
-	if VERSION != string(ver) {
+	/* Handle versions 3 and 8 */
+	var cver = string(ver)
+	switch cver {
+	case "RFB 003.008\n": /* Protocol version 3.8 */
+		cver = "RFB 3.8"
+		/* Send number of security types (1) and the offered type
+		(2, VNC Auth) */
+		/* TODO: Also, offer ALL the auths */
+		if _, err := c.Write([]byte{
+			0x01, /* We will send one offered auth type */
+			0x02, /* VNC Auth */
+		}); nil != err {
+			log.Printf(
+				"%v Unable to offer auth type (%v): %v",
+				c.RemoteAddr(),
+				cver,
+				err,
+			)
+			return
+		}
+		/* Get security type client wants, which should be 2 for now */
+		buf := make([]byte, 1)
+		_, err = io.ReadFull(c, buf)
+		if nil != err {
+			log.Printf(
+				"%v Unable to read accepted security type "+
+					"(%v): %v",
+				c.RemoteAddr(),
+				cver,
+				err,
+			)
+			return
+		}
+		if 0x02 != buf[0] {
+			log.Printf(
+				"%v Accepted unsupported security type "+
+					"%v (%v)",
+				c.RemoteAddr(),
+				cver,
+				buf[0],
+			)
+			return
+		}
+	case "RFB 003.003\n": /* Protocol version 3.3, which is ancient */
+		cver = "RFB 3.3"
+		/* Tell the client to use VNC auth */
+		if n, err := c.Write([]byte{0, 0, 0, 2}); nil != err {
+			log.Printf(
+				"%v Unable to specify VNC auth (%v): %v",
+				c.RemoteAddr(),
+				cver,
+				err,
+			)
+		} else {
+			log.Printf("Wrote %v bytes", n) /* DEBUG */
+		}
+	default:
 		log.Printf("%v Received bad version %q", c.RemoteAddr(), ver)
 		/* Send an error message */
 		if _, err := c.Write(append(
@@ -113,38 +168,7 @@ func handle(c net.Conn) {
 		return
 	}
 	/* Offer VNC Auth */
-	/* TODO: Also, offer ALL the auths */
-	if _, err := c.Write([]byte{
-		0x01, /* We will send one offered auth type */
-		0x02, /* VNC Auth */
-	}); nil != err {
-		log.Printf(
-			"%v Unable to offer auth type: %v",
-			c.RemoteAddr(),
-			err,
-		)
-		return
-	}
-	/* Get security type client wants, which should be 2 for now */
 	/* TODO: Offer more security types */
-	buf := make([]byte, 1)
-	_, err = io.ReadFull(c, buf)
-	if nil != err {
-		log.Printf(
-			"%v Unable to read accepted security type: %v",
-			c.RemoteAddr(),
-			err,
-		)
-		return
-	}
-	if 0x02 != buf[0] {
-		log.Printf(
-			"%v Accepted unsupported security type %v",
-			c.RemoteAddr(),
-			buf[0],
-		)
-		return
-	}
 	/* Send challenge */
 	if _, err := c.Write([]byte(CHALLENGE)); nil != err {
 		log.Printf(
@@ -155,7 +179,7 @@ func handle(c net.Conn) {
 		return
 	}
 	/* Get response */
-	buf = make([]byte, 16)
+	buf := make([]byte, 16)
 	n, err = io.ReadFull(c, buf)
 	buf = buf[:n]
 	if nil != err {

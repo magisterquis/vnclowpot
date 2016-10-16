@@ -40,7 +40,7 @@ func main() {
 
 Listens for VNC connections, performs the initial handshake either using only
 VNC Authentication or offering all auth types (except VNC auth and no auth),
-and logs the auth request.
+and logs the auth request to stdout.  Other logs (errors, etc.) go to stderr.
 
 Options:
 `,
@@ -176,7 +176,7 @@ func handle(c net.Conn) {
 		}
 		return
 	}
-	log.Printf("%v Auth response: %q", c.RemoteAddr(), buf)
+	logSuc("%v Auth response: %q", c.RemoteAddr(), buf)
 	/* Tell client auth failed */
 	c.Write(append(
 		[]byte{
@@ -186,4 +186,13 @@ func handle(c net.Conn) {
 		/* Failure message */
 		[]byte("Invalid username or password.")...,
 	))
+}
+
+/* slogger is a logger for successful authentication attempts.  It logs to
+stdout. */
+var slogger = log.New(os.Stdout, "", 0)
+
+/* logSuc logs successful authentications */
+func logSuc(f string, a ...interface{}) {
+	slogger.Printf(f, a...)
 }

@@ -4,8 +4,8 @@ package main
  * vnclowpot.go
  * Low-interaction VNC honeypot
  * By J. Stuart McMurray
- * Created 20191003
- * Last Modified 20191013
+ * Created 20161003
+ * Last Modified 20170719
  */
 
 /* Reference: https://tools.ietf.org/html/rfc6143 */

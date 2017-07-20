@@ -33,6 +33,11 @@ func main() {
 			"0.0.0.0:5900",
 			"Listen `address`",
 		)
+		jtrout = flag.Bool(
+			"j",
+			false,
+			"Print lines suitable for John The Ripper cracking",
+		)
 	)
 	flag.Usage = func() {
 		fmt.Fprintf(
@@ -64,12 +69,13 @@ Options:
 		if nil != err {
 			log.Fatalf("Error accepting connection: %v", err)
 		}
-		go handle(c)
+		go handle(c, *jtrout)
 	}
 }
 
-/* handle gets auth from a client and rejects it. */
-func handle(c net.Conn) {
+/* handle gets auth from a client and rejects it.  If jtrout is true, log
+lines suitable for John cracking as well. */
+func handle(c net.Conn, jtrout bool) {
 	defer c.Close()
 	/* Send our version */
 	if _, err := c.Write([]byte(VERSION)); nil != err {
@@ -199,7 +205,17 @@ func handle(c net.Conn) {
 		}
 		return
 	}
-	logSuc("%v Auth response: %02X", c.RemoteAddr(), buf)
+	/* Log the returned hash */
+	if jtrout {
+		logSuc(
+			"%v $vnc$*%02X*%02X",
+			c.RemoteAddr(),
+			[]byte(CHALLENGE),
+			buf,
+		)
+	} else {
+		logSuc("%v Auth response: %02X", c.RemoteAddr(), buf)
+	}
 	/* Tell client auth failed */
 	c.Write(append(
 		[]byte{

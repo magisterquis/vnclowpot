@@ -16,8 +16,11 @@ vnclowpot
 
 Options
 -------
-At the moment, there's only one: the listen address (set with `-l`, 
-0.0.0.0:5900 by default).  Pull requests with features are welcome.
+There's only two options:
+- The listen address can be changed with `-l`
+- John The Ripper-compatible lines can be generated with `-j` (and will need
+  to be extracted from the log messages with something like `cut -f 4 -d ' '`).
+Pull requests are welcome.
 
 Windows
 -------

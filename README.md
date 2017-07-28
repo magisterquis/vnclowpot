@@ -22,6 +22,12 @@ There's only two options:
   to be extracted from the log messages with something like `cut -f 4 -d ' '`).
 Pull requests are welcome.
 
+Cracker
+-------
+In the [cracker](./cracker/) directory is a simple program to try to crack the
+handshakes logged in John The Ripper format.  See its
+[README](./cracker/README.md) for more details.
+
 Windows
 -------
 Should probably work.

@@ -155,7 +155,7 @@ Options:
 	tot := 0
 
 	/* Read handshakes from all the files */
-	for _, fn := range flag.Args() {
+	for _, fn := range names {
 		n, err := readHandshakes(fn, hs)
 		if nil != err {
 			if "-" == fn {

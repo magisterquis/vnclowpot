@@ -24,6 +24,8 @@ _testmain.go
 *.prof
 
 vnclowpot
+cracker
 vnclowpot.*.*
 vnclowpot.log
 .*.swp
+

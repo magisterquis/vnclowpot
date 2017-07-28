@@ -157,10 +157,10 @@ Options:
 	/* Read handshakes from all the files */
 	for _, fn := range names {
 		n, err := readHandshakes(fn, hs)
+		if "-" == fn {
+			fn = "standard input"
+		}
 		if nil != err {
-			if "-" == fn {
-				fn = "standard input"
-			}
 			log.Fatalf(
 				"Unable to read handshakes "+
 					"from %v: %v",

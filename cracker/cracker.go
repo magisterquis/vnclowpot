@@ -5,7 +5,7 @@ package main
  * VNC handshake dictionary attacker
  * By J. Stuart McMurray
  * Created 20170720
- * Last Modified 20170728
+ * Last Modified 20170730
  */
 
 import (
@@ -443,19 +443,3 @@ func checkPot(hs handshakes, pr *os.File) (int, error) {
 	}
 	return nFound, nil
 }
-
-//$vnc$*00000000000000000000000000000000*7909B24AE2F2EDC97909B24AE2F2EDC9
-
-//	p := make([]byte, 8)
-//	c := make([]byte, 8)
-//	e, err := des.NewCipher(k)
-//	if nil != err {
-//		panic(err)
-//	}
-//	e.Encrypt(c, p)
-//	fmt.Printf("%02X\n", c)
-
-//	k := []byte("kitten\x00\x00")
-//	for i, b := range k {
-//		k[i] = reversedByte[b]
-//	}

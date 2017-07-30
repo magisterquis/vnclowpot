@@ -189,6 +189,7 @@ Options:
 		}
 		/* Give up if there's none left */
 		if 0 == len(hs) {
+			log.Printf("All passwords found in potfile")
 			return
 		}
 		pr.Close()

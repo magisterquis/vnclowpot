@@ -319,6 +319,10 @@ func crack(hs handshakes, pot *os.File, wordlist string) (int, error) {
 			return 0, err
 		}
 		nCracked += n
+		/* If there's no more handshakes, we're done */
+		if 0 == len(hs) {
+			break
+		}
 	}
 	return nCracked, nil
 }

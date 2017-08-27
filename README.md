@@ -24,9 +24,16 @@ Pull requests are welcome.
 
 Cracker
 -------
-In the [cracker](./cracker/) directory is a simple program to try to crack the
-handshakes logged in John The Ripper format.  See its
+In the [cracker](./cracker/) directory there is a simple program to try to
+crack the handshakes logged in John The Ripper format.  See its
 [README](./cracker/README.md) for more details.
+
+Tester
+------
+In the [tester](./tester/) directory there is a simple program to generate VNC
+authentication attepmts, for use in testing vnclowpot, as well as being
+production-grade for pentesting.  See its [README](./tester/README.md) for more
+details.
 
 Windows
 -------

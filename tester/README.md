@@ -19,6 +19,10 @@ Tester is nothing more than a VNC brute-forcer with the nice side-effect of
 causing vnclowpot to log known hashes (plus a handful of features useful for
 pentesters and such).  Please don't use it for illegal purposes.
 
-Only protocol 3.8 with VNC Authentication is supported.  As this is what is
+~~Only protocol 3.8 with VNC Authentication is supported.  As this is what is
 used by vnclowpot, there are no plans to support other protocol versions.  Pull
-requests are welcome.
+requests are welcome.~~
+
+Versions 3.3, 3.7, and 3.8 are supported.  Only version 3.8 has been thoroughly
+tested.
+

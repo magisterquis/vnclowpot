@@ -13,6 +13,7 @@ import (
 	"bytes"
 	"crypto/cipher"
 	"crypto/des"
+	"encoding/binary"
 	"errors"
 	"flag"
 	"fmt"
@@ -26,8 +27,13 @@ import (
 )
 
 const (
-	// VERSION is the VNC version we expect and support
-	VERSION = "RFB 003.008\n"
+	// VERSION8 is the RFB string for RFB 3.8
+	VERSION8 = "RFB 003.008\n"
+	// VERSION7 is the RFB string for RFB 3.7
+	VERSION7 = "RFB 003.007\n"
+	// VERSION3 is the RFB string for RFB 3.3
+	VERSION3 = "RFB 003.003\n"
+
 	// BUFLEN is the size of the network read/write buffer
 	BUFLEN = 65535
 )
@@ -433,61 +439,22 @@ func try(c net.Conn, target string, pass *password, buf []byte) error {
 	if nil != err {
 		return fmt.Errorf("version read: %v", err)
 	}
-	if VERSION > string(buf[:n]) {
+	sver := string(buf[:n]) /* Server version */
+	if VERSION3 > sver {
 		return fmt.Errorf("Server version %q too low", buf[:n])
 	}
-	if _, err := c.Write([]byte(VERSION)); nil != err {
-		return fmt.Errorf("version send: %v", err)
+	/* Perform the version-specific bit of the handshake to get to where
+	we can auth */
+	switch sver {
+	case VERSION3:
+		err = handshake3(c, buf)
+	case VERSION7, VERSION8:
+		err = handshake8(c, buf, sver)
+	default:
+		return fmt.Errorf("Unknown version %q", sver)
 	}
-	/* Security handshake */
-	n, err = c.Read(buf[:1])
 	if nil != err {
-		return fmt.Errorf("security type count read: %v", err)
-	}
-	nt := buf[0]
-	/* No security types offered */
-	if 0 == nt {
-		_, err := io.ReadFull(c, buf[:4])
-		if nil != err {
-			return fmt.Errorf("message length read: %v", err)
-		}
-		buf[0] = 0x00
-		n, err := c.Read(buf)
-		if n < len(buf) {
-			buf[n] = 0x00
-		}
-		return ErrorHandshakeFailure
-	}
-	/* Make sure we have VNC auth */
-	_, err = io.ReadFull(c, buf[:nt])
-	if nil != err {
-		return fmt.Errorf("security types read: %v", err)
-	}
-	var (
-		haveVNC  bool /* VNC Auth allowed */
-		haveNone bool /* No password needed */
-	)
-	for _, t := range buf[:nt] {
-		switch t {
-		case 0x00:
-			return errors.New("invalid security type 0x00")
-		case 0x01: /* No auth needed */
-			haveNone = true
-		case 0x02: /* This is VNC auth */
-			haveVNC = true
-		}
-	}
-	if !haveVNC {
-		if haveNone {
-			return ErrorNoAuthNeeded
-		}
-		return fmt.Errorf(
-			"VNC auth unsupported (supported auth types %v)",
-			buf[:nt],
-		)
-	}
-	if _, err := c.Write([]byte{0x02}); nil != err {
-		return fmt.Errorf("VNC auth request: %v", err)
+		return err
 	}
 	/* Get challenge, encrypt, send back */
 	n, err = io.ReadFull(c, buf[:16])
@@ -507,15 +474,9 @@ func try(c net.Conn, target string, pass *password, buf []byte) error {
 		/* Worky */
 		return nil
 	}
-	buf[0] = 0x00
 	/* Maybe we'll get a nice error message */
-	_, err = io.ReadFull(c, buf[:4])
-	if nil != err {
+	if err := readFinalString(c, buf); nil != err {
 		return fmt.Errorf("auth fail reason read: %v", err)
-	}
-	n, err = c.Read(buf)
-	if n < len(buf) {
-		buf[n] = 0x00
 	}
 	return ErrorBadPassword
 }
@@ -607,4 +568,110 @@ func addTarget(have map[string]struct{}, out []string, t string) []string {
 	}
 	have[t] = struct{}{}
 	return append(out, t)
+}
+
+/* handshake8 performs the RFB 3.8-speecfic part of the handshake.  It also
+should work for RFB 3.7. */
+func handshake8(c net.Conn, buf []byte, version string) error {
+	/* Tell the server what version we'd like */
+	if _, err := c.Write([]byte(version)); nil != err {
+		return fmt.Errorf("version handshake: %v", err)
+	}
+	/* Security handshake */
+	_, err := c.Read(buf[:1])
+	if nil != err {
+		return fmt.Errorf("security type count read: %v", err)
+	}
+	nt := buf[0]
+	/* No security types offered */
+	if 0 == nt {
+		if err := readFinalString(c, buf); nil != err {
+			return fmt.Errorf("handshake failure read: %v", err)
+		}
+		return ErrorHandshakeFailure
+	}
+	/* Make sure we have VNC auth */
+	_, err = io.ReadFull(c, buf[:nt])
+	if nil != err {
+		return fmt.Errorf("security types read: %v", err)
+	}
+	var (
+		haveVNC  bool /* VNC Auth allowed */
+		haveNone bool /* No password needed */
+	)
+	for _, t := range buf[:nt] {
+		switch t {
+		case 0x00:
+			return errors.New("invalid security type 0x00")
+		case 0x01: /* No auth needed */
+			haveNone = true
+		case 0x02: /* This is VNC auth */
+			haveVNC = true
+		}
+	}
+	if !haveVNC {
+		if haveNone {
+			return ErrorNoAuthNeeded
+		}
+		return fmt.Errorf(
+			"VNC auth unsupported (supported auth types %v)",
+			buf[:nt],
+		)
+	}
+	if _, err := c.Write([]byte{0x02}); nil != err {
+		return fmt.Errorf("VNC auth request: %v", err)
+	}
+
+	return nil
+}
+
+/* handshake3 performs the RFB 3.3-specific part of the handshake */
+func handshake3(c net.Conn, buf []byte) error {
+	/* Tell the server what version we'd like */
+	if _, err := c.Write([]byte(VERSION3)); nil != err {
+		return fmt.Errorf("version handshake: %v", err)
+	}
+	/* Get security type server wants */
+	if _, err := io.ReadFull(c, buf[:4]); nil != err {
+		return fmt.Errorf("security type read: %v", err)
+	}
+	log.Printf("ST: %q", buf[:4]) /* DEBUG */
+	/* Work out auth server wants */
+	switch buf[3] {
+	case 0: /* Connection failed */
+		if err := readFinalString(c, buf); nil != err {
+			return fmt.Errorf("connection fail read: %v", err)
+		}
+		return ErrorHandshakeFailure
+	case 1: /* No auth */
+		return ErrorNoAuthNeeded
+	case 2: /* VNC Auth, this is what we expect */
+		return nil
+	default: /* Against spec */
+		return fmt.Errorf("unexpected security type %q", buf[:4])
+	}
+}
+
+/* readFinalString reads the final 4-byte length and string from a connection
+into b.  The string will be NULL-terminated if it is less than the size of buf.
+If no string is read, the first byte of buf will be NULL. */
+func readFinalString(c net.Conn, buf []byte) error {
+	buf[0] = 0x00
+	/* Get the message length */
+	_, err := io.ReadFull(c, buf[:4])
+	if nil != err {
+		return err
+	}
+	mlen := int(binary.BigEndian.Uint32(buf[:4]))
+	/* Don't read more than the buffer holds */
+	if len(buf) < mlen {
+		mlen = len(buf)
+	}
+	/* Get the message and null terminate it */
+	buf[0] = 0x00
+	n, err := io.ReadFull(c, buf[:mlen])
+	if n < len(buf) {
+		buf[n] = 0x00
+	}
+	return err
 }

@@ -635,7 +635,6 @@ func handshake3(c net.Conn, buf []byte) error {
 	if _, err := io.ReadFull(c, buf[:4]); nil != err {
 		return fmt.Errorf("security type read: %v", err)
 	}
-	log.Printf("ST: %q", buf[:4]) /* DEBUG */
 	/* Work out auth server wants */
 	switch buf[3] {
 	case 0: /* Connection failed */

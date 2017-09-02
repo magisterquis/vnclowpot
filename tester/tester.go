@@ -433,8 +433,8 @@ func try(c net.Conn, target string, pass *password, buf []byte) error {
 	if nil != err {
 		return fmt.Errorf("version read: %v", err)
 	}
-	if VERSION != string(buf[:n]) {
-		return fmt.Errorf("wrong version %q", buf[:n])
+	if VERSION > string(buf[:n]) {
+		return fmt.Errorf("Server version %q too low", buf[:n])
 	}
 	if _, err := c.Write([]byte(VERSION)); nil != err {
 		return fmt.Errorf("version send: %v", err)

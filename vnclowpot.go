@@ -38,6 +38,11 @@ func main() {
 			false,
 			"Print lines suitable for John The Ripper cracking",
 		)
+		ignoreBadVersion = flag.Bool(
+			"ignore-bad-version",
+			false,
+			"Don't print \"Received bad version\" messages",
+		)
 	)
 	flag.Usage = func() {
 		fmt.Fprintf(
@@ -69,13 +74,14 @@ Options:
 		if nil != err {
 			log.Fatalf("Error accepting connection: %v", err)
 		}
-		go handle(c, *jtrout)
+		go handle(c, *jtrout, *ignoreBadVersion)
 	}
 }
 
 /* handle gets auth from a client and rejects it.  If jtrout is true, log
-lines suitable for John cracking as well. */
-func handle(c net.Conn, jtrout bool) {
+lines suitable for John cracking as well.  ignoreBadVersion controlls whether
+or not "Bad version received" messages are logged. */
+func handle(c net.Conn, jtrout bool, ignoreBadVersion bool) {
 	defer c.Close()
 	/* Send our version */
 	if _, err := c.Write([]byte(VERSION)); nil != err {
@@ -153,7 +159,13 @@ func handle(c net.Conn, jtrout bool) {
 			)
 		}
 	default:
-		log.Printf("%v Received bad version %q", c.RemoteAddr(), ver)
+		if !ignoreBadVersion {
+			log.Printf(
+				"%v Received bad version %q",
+				c.RemoteAddr(),
+				ver,
+			)
+		}
 		/* Send an error message */
 		if _, err := c.Write(append(
 			[]byte{
